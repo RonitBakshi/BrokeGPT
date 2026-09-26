@@ -9,6 +9,7 @@ from .database import DatabaseService
 from .routers.auth import router as auth_router
 from .routers.threads import router as threads_router
 from .routers.integrations import router as integrations_router
+from .routers.chat import router as chat_router
 from . import models
 
 
@@ -36,3 +37,4 @@ app = FastAPI(
 app.include_router(auth_router)
 app.include_router(threads_router)
 app.include_router(integrations_router)
+app.include_router(chat_router)

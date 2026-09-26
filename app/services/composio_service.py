@@ -29,3 +29,14 @@ class ComposioService:
             toolkit=toolkit,
             callback_url=callback_url
         )
+
+    def get_tools(
+        self,
+        user_id: str,
+        toolkits: list[str]
+    ):
+        return self.client.tools.get(
+            user_id=user_id,
+            toolkits=toolkits,
+            limit=1000
+        )

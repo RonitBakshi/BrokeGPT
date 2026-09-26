@@ -92,3 +92,21 @@ class IntegrationService:
         self.db.commit()
 
         return True
+
+    def get_connected_toolkits(self) -> list[str]:
+        integrations = self.get_user_integrations()
+
+        toolkits = []
+
+        for integration in integrations:
+            if not integration.connected:
+                continue
+
+            toolkit = self.get_composio_toolkit(
+                integration.mcp_server
+            )
+
+            if toolkit:
+                toolkits.append(toolkit)
+
+        return toolkits

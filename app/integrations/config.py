@@ -1,5 +1,5 @@
 SUPPORTED_INTEGRATIONS = {
     "slack": "slack",
-    "notion": "notion",
+    "notion": "notion_mcp",
     "jira": "jira",
 }
