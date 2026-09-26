@@ -5,3 +5,4 @@ pyjwt
 composio 
 composio_langchain 
 langchain
+langchain-groq
