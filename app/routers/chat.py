@@ -1,6 +1,6 @@
 # app/routers/chat.py
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -19,6 +19,7 @@ router = APIRouter(
 
 
 def get_agent_service(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -31,7 +32,8 @@ def get_agent_service(
 
     return AgentService(
         composio=composio,
-        integration_service=integration_service
+        integration_service=integration_service,
+        checkpointer=request.app.state.checkpointer
     )
 
 
@@ -60,14 +62,21 @@ def chat(
         user_id=current_user.id
     )
 
-    result = agent.invoke({
-        "messages": [
-            {
-                "role": "user",
-                "content": message
+    result = agent.invoke(
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": message
+                }
+            ]
+        },
+        config={
+            "configurable": {
+                "thread_id": thread_id
             }
-        ]
-    })
+        }
+    )
 
     return {
         "thread_id": thread_id,

@@ -11,6 +11,7 @@ from .routers.threads import router as threads_router
 from .routers.integrations import router as integrations_router
 from .routers.chat import router as chat_router
 from . import models
+from langgraph.checkpoint.memory import InMemorySaver
 
 
 @asynccontextmanager
@@ -22,7 +23,10 @@ async def lifespan(app: FastAPI):
 
     database.create_tables()
 
+    checkpointer = InMemorySaver()
+
     app.state.database = database
+    app.state.checkpointer = checkpointer
 
     yield
 

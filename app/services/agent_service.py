@@ -24,10 +24,12 @@ class AgentService:
     def __init__(
         self,
         composio: ComposioService,
-        integration_service: IntegrationService
+        integration_service: IntegrationService,
+        checkpointer
     ):
         self.composio = composio
         self.integration_service = integration_service
+        self.checkpointer = checkpointer
 
     def create_agent(self, user_id: int):
         toolkits = self.integration_service.get_connected_toolkits()
@@ -42,7 +44,8 @@ class AgentService:
             tools=tools,
             middleware=[
                 DynamicToolMiddleware()
-            ]
+            ],
+            checkpointer=self.checkpointer
         )
 
         return agent
