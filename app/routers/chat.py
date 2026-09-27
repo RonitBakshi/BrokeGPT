@@ -150,3 +150,67 @@ def chat(
         "thread_id": thread_id,
         "response": result.value["messages"][-1].content
     }
+
+
+@router.get("/{thread_id}/history")
+def get_chat_history(
+    thread_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    agent_service: AgentService = Depends(get_agent_service)
+):
+    thread_service = ThreadService(
+        db=db,
+        user=current_user
+    )
+
+    thread = thread_service.get_thread(thread_id)
+
+    if not thread:
+        raise HTTPException(
+            status_code=404,
+            detail="Thread not found"
+        )
+
+    agent = agent_service.create_agent(
+        user_id=current_user.id
+    )
+
+    config = {
+        "configurable": {
+            "thread_id": thread_id
+        }
+    }
+
+    state = agent.get_state(config)
+
+    messages = []
+    if state and state.values and "messages" in state.values:
+        for msg in state.values["messages"]:
+            msg_type = getattr(msg, "type", "assistant")
+            role = "user" if msg_type in ("human", "user") else "assistant" if msg_type in ("ai", "assistant") else msg_type
+            
+            tool_calls = getattr(msg, "tool_calls", None)
+            
+            messages.append({
+                "role": role,
+                "content": msg.content if isinstance(msg.content, str) else str(msg.content),
+                "tool_calls": tool_calls if tool_calls else None
+            })
+
+    pending_approval = None
+    if state and state.tasks:
+        for task in state.tasks:
+            if getattr(task, "interrupts", None):
+                interrupt = task.interrupts[0]
+                pending_approval = {
+                    "action_requests": interrupt.value.get("action_requests", []),
+                    "review_configs": interrupt.value.get("review_configs", [])
+                }
+                break
+
+    return {
+        "thread_id": thread_id,
+        "messages": messages,
+        "pending_approval": pending_approval
+    }

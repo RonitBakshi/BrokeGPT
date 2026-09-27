@@ -7,6 +7,7 @@ from ..database import get_db
 from ..models import User
 from ..services.integration_service import IntegrationService
 from ..services.composio_service import ComposioService
+from ..integrations import SUPPORTED_INTEGRATIONS
 from ..integrations.connection_store import (
     create_connection_attempt,
     get_connection_attempt,
@@ -194,3 +195,73 @@ def update_tool_hitl(
         "tool_name": preference.tool_name,
         "hitl_enabled": preference.hitl_enabled
     }
+
+
+@router.get("/supported")
+def get_supported_integrations():
+    return [
+        {
+            "name": name,
+            "toolkit": toolkit
+        }
+        for name, toolkit in SUPPORTED_INTEGRATIONS.items()
+    ]
+
+
+@router.get("/preferences")
+def get_tool_preferences(
+    service: IntegrationService = Depends(get_integration_service)
+):
+    preferences = service.get_tool_preferences()
+    return [
+        {
+            "id": pref.id,
+            "integration": pref.mcp_server,
+            "tool_name": pref.tool_name,
+            "hitl_enabled": pref.hitl_enabled
+        }
+        for pref in preferences
+    ]
+
+
+@router.get("/{integration}/tools")
+def get_integration_tools(
+    integration: str,
+    service: IntegrationService = Depends(get_integration_service),
+    composio: ComposioService = Depends(get_composio_service)
+):
+    if not service.is_supported(integration):
+        raise HTTPException(
+            status_code=404,
+            detail="Unsupported integration"
+        )
+
+    toolkit = service.get_composio_toolkit(integration)
+    
+    tools = []
+    try:
+        tools = composio.get_tools(
+            user_id=str(service.user.id),
+            toolkits=[toolkit]
+        )
+    except Exception:
+        tools = []
+
+    preferences = {
+        pref.tool_name: pref.hitl_enabled
+        for pref in service.get_tool_preferences()
+        if pref.mcp_server == integration
+    }
+
+    result = []
+    for tool in tools:
+        name = getattr(tool, "name", str(tool))
+        description = getattr(tool, "description", "")
+        result.append({
+            "name": name,
+            "description": description,
+            "integration": integration,
+            "hitl_enabled": preferences.get(name, True)
+        })
+
+    return result
