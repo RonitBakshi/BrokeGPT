@@ -1,6 +1,7 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from ..database import get_db
 from ..models import User
@@ -18,6 +19,11 @@ router = APIRouter(
     prefix="/integrations",
     tags=["integrations"]
 )
+
+
+class HITLPreferenceRequest(BaseModel):
+    enabled: bool
+
 
 # Dependency Injection Code
 def get_integration_service(
@@ -159,4 +165,32 @@ def disconnect_integration(
     return {
         "integration": integration,
         "connected": False
+    }
+
+
+@router.put("/{integration}/tools/{tool_name}/hitl")
+def update_tool_hitl(
+    integration: str,
+    tool_name: str,
+    request: HITLPreferenceRequest,
+    service: IntegrationService = Depends(
+        get_integration_service
+    )
+):
+    if not service.is_supported(integration):
+        raise HTTPException(
+            status_code=404,
+            detail="Unsupported integration"
+        )
+
+    preference = service.set_tool_preference(
+        integration=integration,
+        tool_name=tool_name,
+        enabled=request.enabled
+    )
+
+    return {
+        "integration": integration,
+        "tool_name": preference.tool_name,
+        "hitl_enabled": preference.hitl_enabled
     }

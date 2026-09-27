@@ -1,4 +1,5 @@
 from langchain.agents import create_agent
+from langchain.agents.middleware import HumanInTheLoopMiddleware
 
 from .composio_service import ComposioService
 from .integration_service import IntegrationService
@@ -39,11 +40,25 @@ class AgentService:
             toolkits=toolkits
         )
 
+        interrupt_on = {
+            tool.name: True
+            for tool in tools
+        }
+
+        preferences = self.integration_service.get_tool_preferences()
+
+        for preference in preferences:
+            if not preference.hitl_enabled:
+                interrupt_on[preference.tool_name] = False
+
         agent = create_agent(
             model=llm,
             tools=tools,
             middleware=[
-                DynamicToolMiddleware()
+                DynamicToolMiddleware(),
+                HumanInTheLoopMiddleware(
+                    interrupt_on=interrupt_on
+                )
             ],
             checkpointer=self.checkpointer
         )

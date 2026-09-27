@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from ..integrations import SUPPORTED_INTEGRATIONS
-from ..models import User, UserMCPConnection
+from ..models import User, UserMCPConnection, UserToolPreference
 
 
 class IntegrationService:
@@ -110,3 +110,60 @@ class IntegrationService:
                 toolkits.append(toolkit)
 
         return toolkits
+
+    def get_tool_preferences(self) -> list[UserToolPreference]:
+        return (
+            self.db.query(UserToolPreference)
+            .filter(
+                UserToolPreference.user_id == self.user.id
+            )
+            .all()
+        )
+
+    def get_tool_preference(
+        self,
+        integration: str,
+        tool_name: str
+    ) -> UserToolPreference | None:
+        return (
+            self.db.query(UserToolPreference)
+            .filter(
+                UserToolPreference.user_id == self.user.id,
+                UserToolPreference.mcp_server == integration,
+                UserToolPreference.tool_name == tool_name
+            )
+            .first()
+        )
+
+    def set_tool_preference(
+        self,
+        integration: str,
+        tool_name: str,
+        enabled: bool
+    ) -> UserToolPreference:
+        preference = (
+            self.db.query(UserToolPreference)
+            .filter(
+                UserToolPreference.user_id == self.user.id,
+                UserToolPreference.mcp_server == integration,
+                UserToolPreference.tool_name == tool_name
+            )
+            .first()
+        )
+
+        if preference:
+            preference.hitl_enabled = enabled
+        else:
+            preference = UserToolPreference(
+                user_id=self.user.id,
+                mcp_server=integration,
+                tool_name=tool_name,
+                hitl_enabled=enabled
+            )
+
+            self.db.add(preference)
+
+        self.db.commit()
+        self.db.refresh(preference)
+
+        return preference
