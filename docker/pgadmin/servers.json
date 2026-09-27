@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "BrokeGPT",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "brokegpt",
+      "Username": "postgres",
+      "Password": "postgres",
+      "SSLMode": "prefer"
+    }
+  }
+}

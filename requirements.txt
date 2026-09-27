@@ -10,3 +10,5 @@ langgraph-checkpoint-sqlite
 slowapi
 langfuse
 promptguard-sdk
+psycopg[binary]
+langgraph-checkpoint-postgres

@@ -9,10 +9,7 @@ class Base(DeclarativeBase):
 
 class DatabaseService:
     def __init__(self, database_url: str):
-        self.engine = create_engine(
-            database_url,
-            connect_args={"check_same_thread": False}
-        )
+        self.engine = create_engine(database_url)
 
         self.session_factory = sessionmaker(
             bind=self.engine,

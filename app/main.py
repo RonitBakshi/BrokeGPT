@@ -1,4 +1,4 @@
-from contextlib import asynccontextmanager
+from contextlib import ExitStack, asynccontextmanager
 from fastapi import FastAPI
 
 from dotenv import load_dotenv
@@ -12,7 +12,7 @@ from .routers.threads import router as threads_router
 from .routers.integrations import router as integrations_router
 from .routers.chat import router as chat_router
 from .services.promptguard_service import PromptGuardService
-from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.checkpoint.postgres import PostgresSaver
 
 from .middleware.rate_limit import limiter
 from slowapi import _rate_limit_exceeded_handler
@@ -24,27 +24,34 @@ import os
 async def lifespan(app: FastAPI):
 
     database = DatabaseService(
-        "sqlite:///./app.db"
+        "postgresql+psycopg://postgres:postgres@localhost:5432/brokegpt"
     )
 
     database.create_tables()
 
-    checkpointer = InMemorySaver()
-    langfuse = LangfuseService()
+    with PostgresSaver.from_conn_string(
+        "postgresql://postgres:postgres@localhost:5432/brokegpt"
+    ) as checkpointer:
 
-    promptguard = PromptGuardService(
-        api_key=os.environ.get("PROMPTGUARD_API_KEY")
-    )
+        checkpointer.setup()
+        
+        langfuse = LangfuseService()
 
-    app.state.database = database
-    app.state.checkpointer = checkpointer
-    app.state.langfuse = langfuse
-    app.state.promptguard = promptguard
+        promptguard = PromptGuardService(
+            api_key=os.environ.get("PROMPTGUARD_API_KEY")
+        )
 
-    yield
+        app.state.database = database
+        app.state.checkpointer = checkpointer
+        app.state.langfuse = langfuse
+        app.state.promptguard = promptguard
+
+        yield
+
+        promptguard.close()
 
     database.close()
-    promptguard.close()
+    
 
 
 app = FastAPI(
