@@ -187,15 +187,19 @@ def get_chat_history(
     messages = []
     if state and state.values and "messages" in state.values:
         for msg in state.values["messages"]:
-            msg_type = getattr(msg, "type", "assistant")
-            role = "user" if msg_type in ("human", "user") else "assistant" if msg_type in ("ai", "assistant") else msg_type
-            
-            tool_calls = getattr(msg, "tool_calls", None)
-            
+            msg_type = getattr(msg, "type", "")
+            # Only include human/user and ai/assistant messages
+            if msg_type not in ("human", "user", "ai", "assistant"):
+                continue
+            # Only include messages with non-empty string content
+            content = msg.content if isinstance(msg.content, str) else ""
+            if not content.strip():
+                continue
+
+            role = "user" if msg_type in ("human", "user") else "assistant"
             messages.append({
                 "role": role,
-                "content": msg.content if isinstance(msg.content, str) else str(msg.content),
-                "tool_calls": tool_calls if tool_calls else None
+                "content": content
             })
 
     pending_approval = None

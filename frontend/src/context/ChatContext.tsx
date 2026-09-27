@@ -86,13 +86,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const history = await chatService.getChatHistory(thread.id);
       
-      const loadedMessages: UIMessage[] = history.messages.map((m, idx) => ({
-        id: `${thread.id}-${idx}`,
-        role: m.role === 'user' ? 'user' : 'assistant',
-        content: m.content || '',
-        timestamp: new Date().toISOString(),
-        toolCalls: m.tool_calls,
-      }));
+      const loadedMessages: UIMessage[] = history.messages
+        .filter((m) => m.content && typeof m.content === 'string' && m.content.trim().length > 0)
+        .map((m, idx) => ({
+          id: `${thread.id}-${idx}`,
+          role: m.role === 'user' ? 'user' : 'assistant',
+          content: m.content.trim(),
+          timestamp: new Date().toISOString(),
+        }));
 
       // Check if there is an interrupt pending for this thread
       if (history.pending_approval) {
