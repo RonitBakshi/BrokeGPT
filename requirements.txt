@@ -9,3 +9,4 @@ langchain-groq
 langgraph-checkpoint-sqlite
 slowapi
 langfuse
+promptguard-sdk

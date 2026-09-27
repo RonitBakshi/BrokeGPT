@@ -3,7 +3,7 @@ from langchain.agents.middleware import HumanInTheLoopMiddleware
 
 from .composio_service import ComposioService
 from .integration_service import IntegrationService
-from ..middleware import DynamicToolMiddleware
+from ..middleware import DynamicToolMiddleware, PromptGuardMiddleware
 
 from langchain_groq import ChatGroq
 
@@ -27,12 +27,14 @@ class AgentService:
         composio: ComposioService,
         integration_service: IntegrationService,
         checkpointer,
-        langfuse
+        langfuse,
+        promptguard
     ):
         self.composio = composio
         self.integration_service = integration_service
         self.checkpointer = checkpointer
         self.langfuse = langfuse
+        self.promptguard = promptguard
 
     def create_agent(self, user_id: int):
         toolkits = self.integration_service.get_connected_toolkits()
@@ -60,6 +62,9 @@ class AgentService:
             model=llm,
             tools=tools,
             middleware=[
+                PromptGuardMiddleware(
+                    self.promptguard
+                ),
                 DynamicToolMiddleware(),
                 HumanInTheLoopMiddleware(
                     interrupt_on=interrupt_on

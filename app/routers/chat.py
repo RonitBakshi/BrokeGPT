@@ -50,7 +50,8 @@ def get_agent_service(
         composio=composio,
         integration_service=integration_service,
         checkpointer=request.app.state.checkpointer,
-        langfuse=request.app.state.langfuse
+        langfuse=request.app.state.langfuse,
+        promptguard=request.app.state.promptguard
     )
 
 
