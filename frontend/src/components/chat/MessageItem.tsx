@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { UIMessage, HITLDecision } from '../../types/chat';
 import { HITLApprovalCard } from './HITLApprovalCard';
-import { Bot, User as UserIcon } from 'lucide-react';
+import { Bot, User as UserIcon, Check, Copy } from 'lucide-react';
 
 interface MessageItemProps {
   message: UIMessage;
@@ -9,6 +11,78 @@ interface MessageItemProps {
   isLatest: boolean;
   disabledDecision?: boolean;
 }
+
+const CodeBlock: React.FC<{ language?: string; value: string }> = ({ language, value }) => {
+  const [copied, setCopied] = useState<boolean>(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+    }
+  };
+
+  return (
+    <div
+      style={{
+        margin: '14px 0',
+        backgroundColor: 'var(--bg-primary)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-sm)',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '6px 14px',
+          backgroundColor: 'rgba(255, 255, 255, 0.04)',
+          borderBottom: '1px solid var(--border-light)',
+          fontSize: '0.75rem',
+          fontFamily: 'var(--font-mono)',
+          color: 'var(--text-secondary)',
+        }}
+      >
+        <span>{language || 'code'}</span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            color: copied ? 'var(--success)' : 'var(--text-secondary)',
+            fontSize: '0.75rem',
+            padding: '2px 6px',
+            borderRadius: '4px',
+          }}
+          title="Copy code"
+        >
+          {copied ? <Check size={13} /> : <Copy size={13} />}
+          <span>{copied ? 'Copied' : 'Copy'}</span>
+        </button>
+      </div>
+      <pre
+        style={{
+          margin: 0,
+          padding: '14px',
+          overflowX: 'auto',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.85rem',
+          color: '#e2e8f0',
+          lineHeight: 1.55,
+        }}
+      >
+        <code>{value}</code>
+      </pre>
+    </div>
+  );
+};
 
 export const MessageItem: React.FC<MessageItemProps> = ({
   message,
@@ -18,91 +92,6 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 }) => {
   const isUser = message.role === 'user';
 
-  // Format simple code blocks or text
-  const renderFormattedContent = (content: string) => {
-    // If empty content, return null
-    if (!content) return null;
-
-    // Basic markdown code blocks parser: ```code```
-    const parts = content.split(/(```[\s\S]*?```)/g);
-
-    return parts.map((part, index) => {
-      if (part.startsWith('```') && part.endsWith('```')) {
-        const lines = part.slice(3, -3).trim().split('\n');
-        const language = lines[0].match(/^[a-zA-Z0-9_-]+$/) ? lines[0] : '';
-        const code = language ? lines.slice(1).join('\n') : lines.join('\n');
-
-        return (
-          <div
-            key={index}
-            style={{
-              margin: '12px 0',
-              backgroundColor: 'var(--bg-primary)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-sm)',
-              overflow: 'hidden',
-            }}
-          >
-            {language && (
-              <div
-                style={{
-                  padding: '4px 12px',
-                  backgroundColor: 'var(--bg-hover)',
-                  borderBottom: '1px solid var(--border)',
-                  fontSize: '0.75rem',
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                {language}
-              </div>
-            )}
-            <pre
-              style={{
-                margin: 0,
-                padding: '12px',
-                overflowX: 'auto',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.85rem',
-                color: '#e2e8f0',
-                lineHeight: 1.5,
-              }}
-            >
-              <code>{code}</code>
-            </pre>
-          </div>
-        );
-      }
-
-      // Inline backticks `code`
-      const inlineParts = part.split(/(`[^`]+`)/g);
-      return (
-        <span key={index} style={{ whiteSpace: 'pre-wrap' }}>
-          {inlineParts.map((sub, sIdx) => {
-            if (sub.startsWith('`') && sub.endsWith('`')) {
-              return (
-                <code
-                  key={sIdx}
-                  style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.85em',
-                    color: '#e0e7ff',
-                  }}
-                >
-                  {sub.slice(1, -1)}
-                </code>
-              );
-            }
-            return sub;
-          })}
-        </span>
-      );
-    });
-  };
-
   return (
     <div
       className="animate-fade-in"
@@ -110,7 +99,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
         display: 'flex',
         flexDirection: 'column',
         alignItems: isUser ? 'flex-end' : 'flex-start',
-        marginBottom: '20px',
+        marginBottom: '22px',
         width: '100%',
       }}
     >
@@ -118,7 +107,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
         style={{
           display: 'flex',
           gap: '12px',
-          maxWidth: isUser ? '80%' : '88%',
+          maxWidth: isUser ? '82%' : '90%',
           flexDirection: isUser ? 'row-reverse' : 'row',
         }}
       >
@@ -143,18 +132,70 @@ export const MessageItem: React.FC<MessageItemProps> = ({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
-              padding: isUser ? '12px 18px' : '14px 20px',
+              padding: isUser ? '12px 18px' : '16px 20px',
               backgroundColor: isUser ? 'var(--accent)' : 'var(--bg-secondary)',
               color: isUser ? '#ffffff' : 'var(--text-primary)',
               borderRadius: isUser ? '18px 18px 4px 18px' : '4px 18px 18px 18px',
               boxShadow: 'var(--shadow-sm)',
               border: isUser ? 'none' : '1px solid var(--border-light)',
-              fontSize: '0.95rem',
-              lineHeight: 1.6,
-              wordBreak: 'break-word',
             }}
           >
-            {renderFormattedContent(message.content)}
+            {isUser ? (
+              <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.55, fontSize: '0.95rem' }}>
+                {message.content}
+              </div>
+            ) : (
+              <div className="markdown-content">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    code({ className, children, ...props }) {
+                      const match = /language-(\w+)/.exec(className || '');
+                      const codeString = String(children).replace(/\n$/, '');
+
+                      // Check if it's an inline code vs block code
+                      const isInline = !className && !codeString.includes('\n');
+
+                      if (isInline) {
+                        return (
+                          <code
+                            style={{
+                              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '0.85em',
+                              color: '#e0e7ff',
+                            }}
+                            {...props}
+                          >
+                            {children}
+                          </code>
+                        );
+                      }
+
+                      return <CodeBlock language={match ? match[1] : undefined} value={codeString} />;
+                    },
+                    a({ href, children }) {
+                      return (
+                        <a href={href} target="_blank" rel="noopener noreferrer">
+                          {children}
+                        </a>
+                      );
+                    },
+                    table({ children }) {
+                      return (
+                        <div style={{ overflowX: 'auto', margin: '14px 0' }}>
+                          <table>{children}</table>
+                        </div>
+                      );
+                    },
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              </div>
+            )}
           </div>
 
           {/* HITL Card embedded right under the message if pending */}
