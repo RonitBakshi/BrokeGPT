@@ -13,6 +13,9 @@ from ..services.integration_service import IntegrationService
 from .auth import get_current_user
 from ..services.thread_service import ThreadService
 
+from slowapi import Limiter
+from ..middleware.rate_limit import limiter
+
 
 router = APIRouter(
     prefix="/chat",
@@ -51,9 +54,11 @@ def get_agent_service(
 
 
 @router.post("/{thread_id}")
+@limiter.limit("10/minute")
 def chat(
+    request: Request,
     thread_id: str,
-    request: ChatRequest,
+    chat_request: ChatRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     agent_service: AgentService = Depends(get_agent_service)
@@ -81,12 +86,12 @@ def chat(
         }
     }
 
-    if request.decision:
+    if chat_request.decision:
         result = agent.invoke(
             Command(
                 resume={
                     "decisions": [
-                        request.decision.model_dump(
+                        chat_request.decision.model_dump(
                             exclude_none=True
                         )
                     ]
@@ -96,13 +101,13 @@ def chat(
             version="v2"
         )
 
-    elif request.message:
+    elif chat_request.message:
         result = agent.invoke(
             {
                 "messages": [
                     {
                         "role": "user",
-                        "content": request.message
+                        "content": chat_request.message
                     }
                 ]
             },

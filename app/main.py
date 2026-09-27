@@ -13,6 +13,10 @@ from .routers.chat import router as chat_router
 from . import models
 from langgraph.checkpoint.memory import InMemorySaver
 
+from .middleware.rate_limit import limiter
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -36,6 +40,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Agent Platform",
     lifespan=lifespan
+)
+
+app.state.limiter = limiter
+app.add_exception_handler(
+    RateLimitExceeded,
+    _rate_limit_exceeded_handler
 )
 
 app.include_router(auth_router)

@@ -7,3 +7,4 @@ composio_langchain
 langchain
 langchain-groq
 langgraph-checkpoint-sqlite
+slowapi
