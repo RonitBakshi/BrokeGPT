@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from .database import DatabaseService
+from .services.langfuse_service import LangfuseService
 from .routers.auth import router as auth_router
 from .routers.threads import router as threads_router
 from .routers.integrations import router as integrations_router
@@ -28,9 +29,11 @@ async def lifespan(app: FastAPI):
     database.create_tables()
 
     checkpointer = InMemorySaver()
+    langfuse = LangfuseService()
 
     app.state.database = database
     app.state.checkpointer = checkpointer
+    app.state.langfuse = langfuse
 
     yield
 

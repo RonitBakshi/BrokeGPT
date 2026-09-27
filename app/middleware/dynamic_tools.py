@@ -1,5 +1,6 @@
 from langchain.agents.middleware import AgentMiddleware, ToolCallRequest
 from langchain.tools import tool
+from langchain.messages import SystemMessage
 
 
 @tool
@@ -36,8 +37,13 @@ class DynamicToolMiddleware(AgentMiddleware):
             tool.name for tool in request.tools
         )
 
+        system_prompt = request.system_message
+
+        if hasattr(system_prompt, "content"):
+            system_prompt = system_prompt.content
+
         updated_system_message = (
-            f"{request.system_message}\n\n"
+            f"{system_prompt}\n\n"
             "You can dynamically load tools.\n\n"
             f"Available tools:\n{tool_catalog}\n\n"
             "IMPORTANT TOOL RULES:\n\n"
@@ -47,7 +53,7 @@ class DynamicToolMiddleware(AgentMiddleware):
 
         updated = request.override(
             tools=[*tools, bind_tool],
-            system_message=updated_system_message
+            system_message=SystemMessage(updated_system_message)
         )
         
         return handler(updated)

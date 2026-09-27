@@ -26,11 +26,13 @@ class AgentService:
         self,
         composio: ComposioService,
         integration_service: IntegrationService,
-        checkpointer
+        checkpointer,
+        langfuse
     ):
         self.composio = composio
         self.integration_service = integration_service
         self.checkpointer = checkpointer
+        self.langfuse = langfuse
 
     def create_agent(self, user_id: int):
         toolkits = self.integration_service.get_connected_toolkits()
@@ -51,7 +53,10 @@ class AgentService:
             if not preference.hitl_enabled:
                 interrupt_on[preference.tool_name] = False
 
+        agent_prompt = self.langfuse.get_agent_prompt("agent_system_prompt")
+
         agent = create_agent(
+            system_prompt=agent_prompt,
             model=llm,
             tools=tools,
             middleware=[

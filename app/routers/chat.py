@@ -49,7 +49,8 @@ def get_agent_service(
     return AgentService(
         composio=composio,
         integration_service=integration_service,
-        checkpointer=request.app.state.checkpointer
+        checkpointer=request.app.state.checkpointer,
+        langfuse=request.app.state.langfuse
     )
 
 
@@ -80,9 +81,15 @@ def chat(
         user_id=current_user.id
     )
 
+    prompt = agent_service.langfuse.get_prompt("agent_system_prompt")
+
     config = {
+        "callbacks": [agent_service.langfuse.handler],
         "configurable": {
             "thread_id": thread_id
+        },
+        "metadata": {
+            "langfuse_prompt": prompt
         }
     }
 
