@@ -90,7 +90,9 @@ def chat(
             "thread_id": thread_id
         },
         "metadata": {
-            "langfuse_prompt": prompt
+            "langfuse_prompt": prompt,
+            "langfuse_session_id": thread_id,
+            "langfuse_user_id": str(current_user.id),
         }
     }
 
